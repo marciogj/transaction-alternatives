@@ -2,6 +2,6 @@ package udesc.bda.order.queue;
 
 public enum OrderStatus {
 	REQUESTED,
-	COMPENSATE,
+	COMPENSATED,
 	STOCK_READY
 }

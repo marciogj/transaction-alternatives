@@ -33,7 +33,7 @@ public class OrderProcessor implements Runnable {
 		if (request.getStatus() == OrderStatus.REQUESTED) {
 			orderRequestDB.save(request);
 			orderDB.save(request.getOrder());
-		} else if (request.getStatus() == OrderStatus.COMPENSATE) {
+		} else if (request.getStatus() == OrderStatus.COMPENSATED) {
 			//request.getOrder().setStatus(Status.CANCELED);
 			orderRequestDB.update(request);
 			//

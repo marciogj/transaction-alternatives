@@ -4,5 +4,6 @@ public enum StockStatus {
 	COMPLETED,
 	CANCELED,
 	REQUESTED,
-	FAILED
+	FAILED,
+	COMPENSATED
 }

@@ -25,12 +25,17 @@ public class CoordinatorSimulator implements Runnable {
 				
 				if (event instanceof StockRequest) {
 					StockRequest sr = (StockRequest) event;
+					String orderRequestId = sr.getOrderRequestId();
+					OrderRequest orderRequest = new OrderRequest();
+					orderRequest.setId(orderRequestId);
 					System.out.println("    Coordinator - StockRequest type "+sr.getAction().toString()+" - ID[" + sr.getId()+"]");
-					if (((StockRequest) event).getStatus() == StockStatus.COMPLETED) {
-						String orderRequestId = sr.getOrderRequestId();
-						OrderRequest orderRequest = new OrderRequest();
+					if (sr.getStatus() == StockStatus.COMPLETED) {
+						
 						orderRequest.setStatus(OrderStatus.STOCK_READY);
-						orderRequest.setId(orderRequestId);
+						orderQueue.add(orderRequest);
+					}
+					if (sr.getStatus() == StockStatus.COMPENSATED) {
+						orderRequest.setStatus(OrderStatus.COMPENSATED);
 						orderQueue.add(orderRequest);
 					}
 				}

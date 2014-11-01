@@ -53,24 +53,31 @@ public class StockProcessor implements Runnable {
 			for (StockItem item : items) {
 				result = stockDB.withdraw(item);
 				if (result == StockResult.INSUFICIENT) {
-					compensateWithdraws(compensationList);
+					compensateWithdraws(compensationList, request);
 					return StockResult.ERROR;
 				}
 				//All items will be added to compensation in case a further withdraw fails
 				compensationList.add(item); 
 			}
+			
+			request.setStatus(StockStatus.COMPLETED);
+			stockRequestDB.update(request);
+			//Notify coordinator that everything was fine on stock
+			coordinatorQueue.add(request);
 		} else if (request.getAction() == StockAction.COMPENSATE) {
 			stockDB.compensate(request.getItems());
+			request.setStatus(StockStatus.COMPENSATED);
+			stockRequestDB.update(request);
+			coordinatorQueue.add(request);
 		}
-		request.setStatus(StockStatus.COMPLETED);
-		stockRequestDB.update(request);
-		//Notify coordinator that everything was fine on stock
-		coordinatorQueue.add(request);
+		
 		return StockResult.SUCCESS;
 	}
 	
-	private void compensateWithdraws(List<StockItem> compensationList)  {
-		stockQueue.add(new StockRequest(compensationList, StockAction.COMPENSATE));
+	private void compensateWithdraws(List<StockItem> compensationList, StockRequest oldRequest)  {
+		StockRequest request = new StockRequest(compensationList, StockAction.COMPENSATE);
+		request.setOrderRequestId(oldRequest.getOrderRequestId());
+		stockQueue.add(request);
 	}
 
 }
