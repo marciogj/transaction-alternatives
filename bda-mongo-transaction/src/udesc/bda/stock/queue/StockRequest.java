@@ -59,10 +59,6 @@ public class StockRequest implements CommandEvent{
 		this.orderRequestId = orderRequestId;
 	}
 
-	public String get_id() {
-		return _id;
-	} 
-
 }
 
 

@@ -26,6 +26,7 @@ public class StockDB {
 			return StockResult.ERROR;
 		}
 		int stockQuantity = dbItem.getQuantity();
+		System.out.println("  StockDB - Withdrwaing " + item.getQuantity() + " from stock ("+stockQuantity+") - " + item.getProductName());
 		if ( stockQuantity >= item.getQuantity()) {
 			result = StockResult.SUCCESS;
 			dbItem.setQuantity(stockQuantity - item.getQuantity());

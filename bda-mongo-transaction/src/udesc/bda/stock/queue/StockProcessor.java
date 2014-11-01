@@ -25,7 +25,6 @@ public class StockProcessor implements Runnable {
 
 	public void run() {
 		while(true) {
-			System.out.println("Checking for stock request commands...");
 			try {
 				StockRequest stockRequest = stockQueue.take();
 				stockRequest.setStatus(StockStatus.REQUESTED);
@@ -46,7 +45,7 @@ public class StockProcessor implements Runnable {
 	}
 
 	private StockResult process(StockRequest request) {
-		System.out.println("Processing a stock request type of " + (request.getAction() == StockAction.WITHDRAW ? "WITHDRAW" : "COMPENSATION"));
+		System.out.println("StockProcessor - " + request.getAction() + " - StockRequest[" + request.getId()+ "] - RequestOrder[" + request.getOrderRequestId()+"]");
 		if (request.getAction() == StockAction.WITHDRAW) {
 			StockResult result;
 			List<StockItem> items = request.getItems();

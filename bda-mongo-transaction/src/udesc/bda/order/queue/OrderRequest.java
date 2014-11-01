@@ -1,5 +1,7 @@
 package udesc.bda.order.queue;
 
+import java.util.UUID;
+
 import org.jongo.marshall.jackson.oid.Id;
 
 import udesc.bda.CommandEvent;
@@ -15,7 +17,7 @@ public class OrderRequest implements CommandEvent {
 	public OrderRequest() {}
 	
 	public OrderRequest(Order o, OrderStatus action) {
-		super();
+		_id = UUID.randomUUID().toString();
 		this.order = o;
 		this.status = action;
 	}

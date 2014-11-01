@@ -18,7 +18,6 @@ public class OrderProcessor implements Runnable {
 	
 	public void run() {
 		while(true) {
-			System.out.println("Checking for order request commands...");
 			try {
 				OrderRequest orderRequest = orderQueue.take();
 				process(orderRequest);
@@ -30,13 +29,14 @@ public class OrderProcessor implements Runnable {
 	}
 	
 	private void process(OrderRequest request) {
-		System.out.println("Processing a request type of " + (request.getStatus() == OrderStatus.REQUESTED ? "REQUEST" : "COMPENSATION"));
+		System.out.println("OrderProcessor - " + request.getStatus() + " - OrderRequestId["+request.getId()+"]");
 		if (request.getStatus() == OrderStatus.REQUESTED) {
 			orderRequestDB.save(request);
 			orderDB.save(request.getOrder());
 		} else if (request.getStatus() == OrderStatus.COMPENSATE) {
 			//request.getOrder().setStatus(Status.CANCELED);
 			orderRequestDB.update(request);
+			//
 		} else if(request.getStatus() == OrderStatus.STOCK_READY) {
 			orderRequestDB.update(request);
 		}

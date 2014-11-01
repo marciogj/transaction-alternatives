@@ -56,12 +56,13 @@ public class Main {
 	
 	private static void prepareStock() {
 		StockDB db = new StockDB();
-		registeredItems.add(new StockItem("Complexity: A Guided Tour", 1000000));
-		registeredItems.add(new StockItem("Diversity and Complexity", 1000000));
-		registeredItems.add(new StockItem("Introducing Fractals: A Graphic Guide", 1000000));
-		registeredItems.add(new StockItem("Chaos: Making a New Science", 1000000));
-		registeredItems.add(new StockItem("Refactoring: Improving the Design of Existing Code", 1000000));
-		registeredItems.add(new StockItem("NoSQL Distilled: A Brief Guide to the Emerging World of Polyglot Persistence", 1000000));
+		int quantity = 50;
+		registeredItems.add(new StockItem("Complexity: A Guided Tour", quantity));
+		registeredItems.add(new StockItem("Diversity and Complexity", quantity));
+		registeredItems.add(new StockItem("Introducing Fractals: A Graphic Guide", quantity));
+		registeredItems.add(new StockItem("Chaos: Making a New Science", quantity));
+		registeredItems.add(new StockItem("Refactoring: Improving the Design of Existing Code", quantity));
+		registeredItems.add(new StockItem("NoSQL Distilled: A Brief Guide to the Emerging World of Polyglot Persistence", quantity));
 		
 		for (StockItem stockItem : registeredItems) {
 			db.save(stockItem);
