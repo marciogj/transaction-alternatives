@@ -13,6 +13,8 @@ import udesc.bda.stock.persistance.StockDB;
 import udesc.bda.stock.persistance.StockRequestDB;
 import udesc.bda.stock.queue.StockProcessor;
 import udesc.bda.stock.queue.StockRequest;
+import udesc.simulator.CoordinatorSimulator;
+import udesc.simulator.OrderRequestSimulator;
 
 
 public class Main {

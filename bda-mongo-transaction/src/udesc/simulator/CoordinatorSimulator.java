@@ -1,3 +1,4 @@
+package udesc.simulator;
 import java.util.concurrent.BlockingQueue;
 
 import udesc.bda.CommandEvent;
