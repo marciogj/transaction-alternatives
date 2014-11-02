@@ -48,13 +48,15 @@ public class CustomerRunnable implements Runnable {
 	public static  Order request(Customer c) {
 		Order order = new Order();
 		order.setCustomer(c);
+		int quantity = 3;
+		int price = 10000;
 		order.setPayment(new Payment("1234 5678 7890 4457", c.getName()));
-		order.add(new Item(new Product("Complexity: A Guided Tour"), 10058, 2));
-		order.add(new Item(new Product("Diversity and Complexity"), 9870, 5));
-		order.add(new Item(new Product("Introducing Fractals: A Graphic Guide"), 5800, 1));
-		order.add(new Item(new Product("Chaos: Making a New Science"), 7850, 3));
-		order.add(new Item(new Product("Refactoring: Improving the Design of Existing Code"), 5680, 4));
-		order.add(new Item(new Product("NoSQL Distilled: A Brief Guide to the Emerging World of Polyglot Persistence "), 10450, 20));
+		order.add(new Item(new Product("Complexity: A Guided Tour"), price, quantity++));
+		order.add(new Item(new Product("Diversity and Complexity"), price, quantity++));
+		order.add(new Item(new Product("Introducing Fractals: A Graphic Guide"), price, quantity++));
+		order.add(new Item(new Product("Chaos: Making a New Science"), price, quantity++));
+		order.add(new Item(new Product("Refactoring: Improving the Design of Existing Code"), price, quantity++));
+		order.add(new Item(new Product("NoSQL Distilled: A Brief Guide to the Emerging World of Polyglot Persistence "), price, quantity++));
 		return order;
 	}
 
