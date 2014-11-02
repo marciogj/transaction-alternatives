@@ -2,6 +2,7 @@ package udesc.bda.sql;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
 
 import udesc.bda.ecommerce.Order;
@@ -37,13 +38,18 @@ public class Store {
 			
 			orderDao.save(order, conn);
 			itemDao.save(order.getItems(), order.getId(), conn);
-			stockDao.update(order.getItems(), conn);
+			List<Integer> stockResult = stockDao.update(order.getItems(), conn);
+			boolean isStockOk = true;
+			for (Integer stockValue : stockResult) {
+				isStockOk = isStockOk && (stockValue.intValue() >= 0);
+			}
+			if (!isStockOk) {
+				conn.rollback();
+			} else {
+				conn.commit();
+			}
 			
-			//Stock
-			//FiscalReceipt
-			conn.commit();
 			conn.setAutoCommit(true);
-			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

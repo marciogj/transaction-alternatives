@@ -18,7 +18,7 @@ import udesc.bda.stock.queue.StockProcessor;
 import udesc.bda.stock.queue.StockRequest;
 
 
-public class MainMeasurement {
+public class MainMeasureNoSQL {
 	private static BlockingQueue<StockRequest> stockQueue = new LinkedBlockingQueue<StockRequest>();
 	private static BlockingQueue<OrderRequest> orderQueue = new LinkedBlockingQueue<OrderRequest>();
 	private static BlockingQueue<CommandEvent> coordQueue = new LinkedBlockingQueue<CommandEvent>();;
@@ -27,11 +27,12 @@ public class MainMeasurement {
 
 	private static final int threads = 80;
 	private static final int orders = 200;
+	private static final int stock_quantity = 1000;
 	private static BlockingQueue<Integer> counter = new ArrayBlockingQueue<Integer>(threads);
 	
 	public static void main(String[] args) {
 		cleanUp();
-		prepareStock();
+		prepareStock(stock_quantity);
 		long start = System.nanoTime();
 		startStockProcessor();
 		startOrderProcessor();
@@ -68,9 +69,8 @@ public class MainMeasurement {
 	  new Thread(new StockProcessor(stockQueue, coordQueue)).start();
 	}
 	
-	private static void prepareStock() {
+	private static void prepareStock(int quantity) {
 		StockDB db = new StockDB();
-		int quantity = 1000;
 		registeredItems.add(new StockItem("Complexity: A Guided Tour", quantity));
 		registeredItems.add(new StockItem("Diversity and Complexity", quantity));
 		registeredItems.add(new StockItem("Introducing Fractals: A Graphic Guide", quantity));

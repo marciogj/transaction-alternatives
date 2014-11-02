@@ -17,14 +17,15 @@ import udesc.bda.sql.dao.OrderDAO;
 import udesc.bda.sql.dao.StockDAO;
 
 
-public class Main {
+public class MainMeasureRDMS {
 	private static final int threads = 80;
 	private static final int orders = 200;
+	private static final int stock_quantity = 1000;
 	private static BlockingQueue<Integer> counter = new ArrayBlockingQueue<Integer>(threads);
 
 	public static void main(String[] args) {
 		cleanUp();
-		prepareStock();
+		prepareStock(stock_quantity);
 		Store s = new Store();
 		for (int i=0; i < threads; i++) {
 			new Thread(new CustomerRunnable(new Customer("Customer#"+i), s, counter, orders)).start();
@@ -47,7 +48,7 @@ public class Main {
 		System.exit(0);
 	}
 
-	public static void prepareStock() {
+	public static void prepareStock(int quantity) {
 		MySQL db = new MySQL();
 		Optional<Connection> maybeAConn = null;
 		Connection conn = null;
@@ -69,6 +70,7 @@ public class Main {
 			Order o = CustomerRunnable.request(c);
 			List<Item> items = o.getItems();
 			for (Item item : items) {
+				item.setQuantity(quantity);
 				dao.save(item, conn);
 			}
 
