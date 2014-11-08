@@ -10,6 +10,7 @@ public class Item {
 	public Item(Product p, int unit_price, int qtd) {
 		product = p;
 		quantity = qtd;
+		this.unit_price = unit_price;
 	}
 
 	public Product getProduct() {
