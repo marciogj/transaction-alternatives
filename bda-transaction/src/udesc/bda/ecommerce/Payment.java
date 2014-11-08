@@ -9,6 +9,8 @@ public class Payment {
 	
 	public Payment(String card, String owner) {
 		id = UUID.randomUUID().toString();
+		cardNumber = card;
+		ownerName = owner;
 	}
 
 	public String getId() {
