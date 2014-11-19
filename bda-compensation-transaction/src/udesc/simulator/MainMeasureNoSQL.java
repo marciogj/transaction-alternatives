@@ -26,8 +26,8 @@ public class MainMeasureNoSQL {
 	private static List<StockItem> registeredItems = new ArrayList<StockItem>();
 
 	private static final int threads = 80;
-	private static final int orders = 200;
-	private static final int stock_quantity = 1000;
+	private static final int orders = 375;
+	private static final int stock_quantity = 10000;
 	private static BlockingQueue<Integer> counter = new ArrayBlockingQueue<Integer>(threads);
 	
 	public static void main(String[] args) {
