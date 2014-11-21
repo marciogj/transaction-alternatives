@@ -1,12 +1,14 @@
-package udesc.bda.order.persistance;
+package udesc.bda.order.persistance.mongo;
 
 import org.jongo.MongoCollection;
 
 import udesc.bda.MongoDBStatic;
 import udesc.bda.order.model.Order;
+import udesc.bda.persistance.DBEntity;
+import udesc.bda.persistance.Database;
 
 
-public class OrderDB {
+public class OrderDB implements Database{
 
 	private final MongoCollection orderDB;
 
@@ -15,10 +17,11 @@ public class OrderDB {
 		orderDB = MongoDBStatic.getCollection("orders");
 	}
 	
-	public boolean save(Order order) {
+	@Override
+	public boolean save(DBEntity order) {
 		boolean result = true;
 		try {
-			orderDB.insert(order);
+			orderDB.insert((Order)order);
 		} catch (Exception e) {
 			e.printStackTrace();
 			result = false;
@@ -30,8 +33,11 @@ public class OrderDB {
 		orderDB.drop();
 	}
 
-	public void update(Order order) {
+	@Override
+	public boolean update(DBEntity o) {
+		Order order = (Order) o;
 		orderDB.update("{_id: '"+order.getId()+"'}").with(order);
+		return true;
 	}
 
 
