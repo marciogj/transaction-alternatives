@@ -5,8 +5,6 @@ import org.jongo.MongoCollection;
 import shipping.DeliveryRequest;
 import shipping.ShippingRepository;
 
-import com.mongodb.DuplicateKeyException;
-
 public class ShippingMongoDBRepository implements ShippingRepository {
 
 	private MongoCollection shippingCollection;
@@ -19,12 +17,7 @@ public class ShippingMongoDBRepository implements ShippingRepository {
 
 	@Override
 	public void save(DeliveryRequest deliveryRequest) {
-		try {
-			shippingCollection.save(deliveryRequest);
-		} catch (DuplicateKeyException e) {
-			System.out.println("> Duplicated DeliveryRequest, won't write.");
-			// ok
-		}
+		shippingCollection.save(deliveryRequest);
 	}
 
 }

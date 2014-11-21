@@ -13,41 +13,35 @@ import com.rabbitmq.client.ConnectionFactory;
 public abstract class AbstractRabbitMQMessageSender {
 
 	private static final String EXCHANGE_TYPE = "fanout";
-	private ConnectionFactory factory;
 	private String exchangeName;
+	private Connection connection;
+	private Channel channel;
 
 	public AbstractRabbitMQMessageSender(ConnectionFactory factory,
 			String exchangeName) {
-		this.factory = factory;
 		this.exchangeName = exchangeName;
+		try {
+			connection = factory.newConnection();
+			channel = connection.createChannel();
+			channel.exchangeDeclare(exchangeName, EXCHANGE_TYPE);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public void send(String intent, Object message) {
-		System.out.println("> Sending message '" + intent + "' to '"
-				+ exchangeName + "'.");
 		try {
-			Connection connection = factory.newConnection();
-			try {
-				Channel channel = connection.createChannel();
-				try {
-					channel.exchangeDeclare(exchangeName, EXCHANGE_TYPE);
-					Gson gson = new Gson();
-					RabbitMQMessage mQMessage = new RabbitMQMessage();
-					mQMessage.intent = intent;
-					mQMessage.message = message instanceof String ? (String) message
-							: gson.toJson(message);
-					String messageJSon = gson.toJson(mQMessage);
-					byte[] serializedMessage = messageJSon.getBytes("UTF-8");
-					BasicProperties properties = null;
-					String routingKey = "";
-					channel.basicPublish(exchangeName, routingKey, properties,
-							serializedMessage);
-				} finally {
-					channel.close();
-				}
-			} finally {
-				connection.close();
-			}
+			Gson gson = new Gson();
+			RabbitMQMessage mQMessage = new RabbitMQMessage();
+			mQMessage.intent = intent;
+			mQMessage.message = message instanceof String ? (String) message
+					: gson.toJson(message);
+			String messageJSon = gson.toJson(mQMessage);
+			byte[] serializedMessage = messageJSon.getBytes("UTF-8");
+			BasicProperties properties = null;
+			String routingKey = "";
+			channel.basicPublish(exchangeName, routingKey, properties,
+					serializedMessage);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

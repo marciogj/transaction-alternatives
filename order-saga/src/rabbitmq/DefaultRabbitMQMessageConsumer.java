@@ -2,6 +2,7 @@ package rabbitmq;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import rabbitmq.command.RabbitMQMessage;
 import rabbitmq.command.RabbitMQMessageHandler;
@@ -16,19 +17,19 @@ import com.rabbitmq.client.Envelope;
 
 public class DefaultRabbitMQMessageConsumer {
 
+	public static AtomicInteger conflictCount = new AtomicInteger(0);
+
 	private static final String EXCHANGE_TYPE = "fanout";
 	private ConnectionFactory factory;
 	private Connection connection;
 	private Channel channel;
 	private String exchangeName;
 	private String queueName;
-	private String consumerName;
 
 	public DefaultRabbitMQMessageConsumer(ConnectionFactory factory,
 			String exchangeName, String consumerName) {
 		this.factory = factory;
 		this.exchangeName = exchangeName;
-		this.consumerName = consumerName;
 		queueName = exchangeName + "-" + consumerName;
 	}
 
@@ -55,15 +56,29 @@ public class DefaultRabbitMQMessageConsumer {
 							RabbitMQMessage message = gson.fromJson(
 									messageBody, RabbitMQMessage.class);
 
-							System.out.println("> Handling message '"
-									+ message.intent + "' at '" + exchangeName
-									+ "' by '" + consumerName + "'.");
-
-							rabbitMQMessageHandler.handle(message);
+							boolean ack = true;
+							try {
+								rabbitMQMessageHandler.handle(message);
+							} catch (Throwable t) {
+								t.printStackTrace();
+								if (t.getMessage().equals("conflict")) {
+									int conflictsSoFar = conflictCount
+											.incrementAndGet();
+									System.out.println("Conflicts: "
+											+ conflictsSoFar);
+								}
+								ack = false;
+							}
 
 							long deliveryTag = envelope.getDeliveryTag();
 							boolean multiple = false;
-							channel.basicAck(deliveryTag, multiple);
+							if (ack) {
+								channel.basicAck(deliveryTag, multiple);
+							} else {
+								boolean requeue = true;
+								channel.basicNack(deliveryTag, multiple,
+										requeue);
+							}
 						}
 					});
 		} catch (IOException e) {
