@@ -2,18 +2,23 @@ package udesc.bda.order.queue;
 
 import java.util.concurrent.BlockingQueue;
 
-import udesc.bda.order.persistance.OrderDB;
-import udesc.bda.order.persistance.OrderRequestDB;
+import udesc.bda.order.persistance.mongo.OrderDB;
+import udesc.bda.order.persistance.mongo.OrderRequestDB;
+import udesc.bda.persistance.DBFactory;
+import udesc.bda.persistance.Database;
 
 public class OrderProcessor implements Runnable {
 	private BlockingQueue<OrderRequest> orderQueue;
-	private OrderDB orderDB;
-	private OrderRequestDB orderRequestDB;
+	private Database orderDB;
+	private Database orderRequestDB;
 	
 	public OrderProcessor(BlockingQueue<OrderRequest> queue) {
 		orderQueue = queue;
 		orderDB = new OrderDB();
 		orderRequestDB = new OrderRequestDB();
+		
+		orderDB = DBFactory.getOrderDB();
+		orderRequestDB = DBFactory.getOrderRequestDB();
 	}
 	
 	public void run() {

@@ -1,12 +1,14 @@
-package udesc.bda.stock.persistance;
+package udesc.bda.stock.persistance.mongo;
 
 import org.jongo.MongoCollection;
 
 import udesc.bda.MongoDBStatic;
+import udesc.bda.persistance.DBEntity;
+import udesc.bda.persistance.Database;
 import udesc.bda.stock.queue.StockRequest;
 
 
-public class StockRequestDB {
+public class StockRequestDB implements Database {
 
 	private final MongoCollection db;
 
@@ -21,10 +23,10 @@ public class StockRequestDB {
 		
 	}
 	
-	public boolean save(StockRequest request) {
+	public boolean save(DBEntity request) {
 		boolean result = true;
 		try {
-			db.insert(request);
+			db.insert((StockRequest)request);
 		} catch (Exception e) {
 			e.printStackTrace();
 			result = false;
@@ -36,8 +38,9 @@ public class StockRequestDB {
 		db.drop();
 	}
 
-	public void update(StockRequest request) {
-		db.update("{_id: '" + request.getId() + "'}").with(request);
+	public boolean update(DBEntity o) {
+		StockRequest request = (StockRequest) o;
+		return db.update("{_id: '" + request.getId() + "'}").with(request) != null;
 	}
 
 }

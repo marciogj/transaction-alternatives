@@ -5,22 +5,23 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 import udesc.bda.CommandEvent;
+import udesc.bda.persistance.DBFactory;
+import udesc.bda.persistance.Database;
 import udesc.bda.stock.model.StockItem;
-import udesc.bda.stock.persistance.StockDB;
-import udesc.bda.stock.persistance.StockRequestDB;
+import udesc.bda.stock.persistance.StockDatabase;
 
 //Single entry point to process stock database
 public class StockProcessor implements Runnable {
 	private BlockingQueue<StockRequest> stockQueue;
 	private BlockingQueue<CommandEvent> coordinatorQueue;
-	private StockDB stockDB;
-	private StockRequestDB stockRequestDB;
+	private StockDatabase stockDB;
+	private Database stockRequestDB;
 
 	public StockProcessor(BlockingQueue<StockRequest> rq, BlockingQueue<CommandEvent> cq) {
 		stockQueue = rq;
 		coordinatorQueue = cq;
-		stockDB = new StockDB();
-		stockRequestDB = new StockRequestDB();
+		stockDB = DBFactory.getStockDB();
+		stockRequestDB = DBFactory.getStockRequestDB();
 	}
 
 	public void run() {

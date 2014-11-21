@@ -6,9 +6,10 @@ import java.util.UUID;
 import org.jongo.marshall.jackson.oid.Id;
 
 import udesc.bda.CommandEvent;
+import udesc.bda.persistance.DBEntity;
 import udesc.bda.stock.model.StockItem;
 
-public class StockRequest implements CommandEvent{
+public class StockRequest implements CommandEvent, DBEntity {
 	@Id String _id;
 	private String orderRequestId;
 	private List<StockItem> itens;

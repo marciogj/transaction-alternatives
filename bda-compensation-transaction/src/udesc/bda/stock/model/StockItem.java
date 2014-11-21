@@ -4,8 +4,10 @@ import java.util.UUID;
 
 import org.jongo.marshall.jackson.oid.Id;
 
+import udesc.bda.persistance.DBEntity;
 
-public class StockItem {
+
+public class StockItem implements DBEntity{
 	@Id	private String _id;
 	private String productName;
 	private int quantity;

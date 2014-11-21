@@ -6,9 +6,10 @@ import org.jongo.marshall.jackson.oid.Id;
 
 import udesc.bda.CommandEvent;
 import udesc.bda.order.model.Order;
+import udesc.bda.persistance.DBEntity;
 import udesc.bda.stock.queue.StockRequest;
 
-public class OrderRequest implements CommandEvent {
+public class OrderRequest implements CommandEvent, DBEntity {
 	@Id	private String _id;
 	private StockRequest stockRequest;
 	private Order order;

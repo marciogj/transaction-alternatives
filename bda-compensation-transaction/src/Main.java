@@ -4,13 +4,13 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import udesc.bda.CommandEvent;
-import udesc.bda.order.persistance.OrderDB;
-import udesc.bda.order.persistance.OrderRequestDB;
+import udesc.bda.order.persistance.mongo.OrderDB;
+import udesc.bda.order.persistance.mongo.OrderRequestDB;
 import udesc.bda.order.queue.OrderProcessor;
 import udesc.bda.order.queue.OrderRequest;
 import udesc.bda.stock.model.StockItem;
-import udesc.bda.stock.persistance.StockDB;
-import udesc.bda.stock.persistance.StockRequestDB;
+import udesc.bda.stock.persistance.mongo.StockDB;
+import udesc.bda.stock.persistance.mongo.StockRequestDB;
 import udesc.bda.stock.queue.StockProcessor;
 import udesc.bda.stock.queue.StockRequest;
 import udesc.simulator.CoordinatorSimulator;

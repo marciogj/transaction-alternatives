@@ -6,7 +6,9 @@ import java.util.UUID;
 
 import org.jongo.marshall.jackson.oid.Id;
 
-public class Order {
+import udesc.bda.persistance.DBEntity;
+
+public class Order implements DBEntity {
 	@Id	private String _id;
 	private Customer customer;
 	private Payment payment;

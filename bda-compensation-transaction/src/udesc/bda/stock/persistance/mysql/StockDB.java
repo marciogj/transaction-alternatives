@@ -1,48 +1,45 @@
-package udesc.bda.stock.persistance.mongo;
+package udesc.bda.stock.persistance.mysql;
 
+import java.sql.Connection;
 import java.util.List;
 
-import org.jongo.MongoCollection;
-
-import udesc.bda.MongoDBStatic;
 import udesc.bda.persistance.DBEntity;
+import udesc.bda.persistance.MySQL;
 import udesc.bda.stock.model.StockItem;
 import udesc.bda.stock.persistance.StockDatabase;
 import udesc.bda.stock.queue.StockResult;
 
 
 public class StockDB extends StockDatabase {
-
-	private final MongoCollection stock;
-
-
+	protected Connection conn;
+	StockDAO dao;
+	
 	public StockDB() {
-		stock = MongoDBStatic.getCollection("stock");
-	}
+		MySQL db = MySQL.getInstance();
+		conn = db.waitAndGetConnection();
+		dao = new StockDAO();
+	}	
+	
 	
 	public StockResult withdraw(StockItem item) {
 		StockResult result = StockResult.INSUFICIENT;
-		StockItem dbItem = stock.findOne("{_id: '" + item.getId() + "'}").as(StockItem.class);
-		if (dbItem == null) {
-			System.err.println("Could not find item with id " + item.getId());
-			return StockResult.ERROR;
-		}
-		int stockQuantity = dbItem.getQuantity();
+		int stockQuantity = dao.getStockQuantity(item.getId(), conn);
+	
 		System.out.println("  StockDB - Withdrwaing " + item.getQuantity() + " from stock ("+stockQuantity+") - " + item.getProductName());
 		if ( stockQuantity >= item.getQuantity()) {
 			result = StockResult.SUCCESS;
-			dbItem.setQuantity(stockQuantity - item.getQuantity());
-			stock.update("{_id: '"+item.getId()+"'}").with(dbItem);
+			int newStockvalue =stockQuantity - item.getQuantity(); 
+			item.setQuantity(newStockvalue);
+			dao.update(item, conn);
 		} 
 		return result;
 		
 	}
 	
-	public int getStockQuantity(String product_id) {
+	public int getStockQuantity(String id) {
 		int total = 0;
 		try {
-			StockItem item = stock.findOne("{_id: '" + product_id + "'}").as(StockItem.class);
-			total = item.getQuantity();
+			total = dao.getStockQuantity(id, conn);
 		} catch (Exception e) {
 			e.printStackTrace();
 		} 
@@ -53,7 +50,7 @@ public class StockDB extends StockDatabase {
 	public boolean save(DBEntity item) {
 		boolean result = true;
 		try {
-			stock.insert((StockItem)item);
+			dao.save((StockItem)item, conn);
 		} catch (Exception e) {
 			e.printStackTrace();
 			result = false;
@@ -62,21 +59,21 @@ public class StockDB extends StockDatabase {
 	}
 
 	public void deleteAll() {
-		stock.drop();
+		dao.deleteAll(conn);
 	}
 
 	public synchronized void compensate(List<StockItem> itens) {
 		for (StockItem item : itens) {
-			StockItem dbItem = stock.findOne("{_id: '" + item.getId() + "'}").as(StockItem.class);
-			dbItem.setQuantity(dbItem.getQuantity() + item.getQuantity());
-			stock.update("{_id: '"+item.getId()+"'}").with(dbItem);
+			int dbTotal = dao.getStockQuantity(item.getId(), conn);
+			item.setQuantity(dbTotal + item.getQuantity());
+			dao.update(item, conn);
 		}
 		
 	}
 
 	@Override
 	public boolean update(DBEntity o) {
-		throw new RuntimeException("Not implemented!");
+		throw new RuntimeException("Not implemented");
 	}
 
 }
