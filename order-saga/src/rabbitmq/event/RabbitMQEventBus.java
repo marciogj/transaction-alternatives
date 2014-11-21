@@ -2,39 +2,42 @@ package rabbitmq.event;
 
 import order.OrderEventBus;
 import payment.PaymentEventBus;
+import rabbitmq.ConnectionFactories;
 import relationship.RelationshipEventBus;
 import shipping.ShippingEventBus;
 import stock.StockEventBus;
 
-import com.rabbitmq.client.ConnectionFactory;
-
 public class RabbitMQEventBus {
 
-	private ConnectionFactory factory;
-
-	public RabbitMQEventBus() {
-		factory = new ConnectionFactory();
-		factory.setHost("localhost");
-	}
+	private final OrderRabbitMQEventBus orderRabbitMQEventBus = new OrderRabbitMQEventBus(
+			ConnectionFactories.order());
+	private final PaymentRabbitMQEventBus paymentRabbitMQEventBus = new PaymentRabbitMQEventBus(
+			ConnectionFactories.order());
+	private final RelationshipRabbitMQEventBus relationshipRabbitMQEventBus = new RelationshipRabbitMQEventBus(
+			ConnectionFactories.order());
+	private final ShippingRabbitMQEventBus shippingRabbitMQEventBus = new ShippingRabbitMQEventBus(
+			ConnectionFactories.order());
+	private final StockRabbitMQEventBus stockRabbitMQEventBus = new StockRabbitMQEventBus(
+			ConnectionFactories.order());
 
 	public OrderEventBus orderEventBus() {
-		return new OrderRabbitMQEventBus(factory);
+		return orderRabbitMQEventBus;
 	}
 
 	public PaymentEventBus paymentEventBus() {
-		return new PaymentRabbitMQEventBus(factory);
+		return paymentRabbitMQEventBus;
 	}
 
 	public RelationshipEventBus relationshipEventBus() {
-		return new RelationshipRabbitMQEventBus(factory);
+		return relationshipRabbitMQEventBus;
 	}
 
 	public ShippingEventBus shippingEventBus() {
-		return new ShippingRabbitMQEventBus(factory);
+		return shippingRabbitMQEventBus;
 	}
 
 	public StockEventBus stockEventBus() {
-		return new StockRabbitMQEventBus(factory);
+		return stockRabbitMQEventBus;
 	}
 
 }

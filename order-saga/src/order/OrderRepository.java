@@ -6,6 +6,4 @@ public interface OrderRepository {
 
 	void deleteByHash(String orderHash);
 
-	OrderEntity loadByHash(String orderHash);
-
 }

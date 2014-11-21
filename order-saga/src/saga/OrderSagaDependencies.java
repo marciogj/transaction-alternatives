@@ -14,6 +14,7 @@ public class OrderSagaDependencies {
 	private PaymentService paymentService;
 	private RelationshipService relationshipService;
 	private ShippingService shippingService;
+	private OrderSagaMetrics metrics;
 
 	public OrderSagaDependencies(
 			OrderSagaRepository orderSagaRepository,
@@ -21,13 +22,15 @@ public class OrderSagaDependencies {
 			StockService stockService,
 			PaymentService paymentService,
 			RelationshipService relationshipService,
-			ShippingService shippingService) {
+			ShippingService shippingService,
+			OrderSagaMetrics metrics) {
 		this.orderSagaRepository = orderSagaRepository;
 		this.orderService = orderService;
 		this.stockService = stockService;
 		this.paymentService = paymentService;
 		this.relationshipService = relationshipService;
 		this.shippingService = shippingService;
+		this.metrics = metrics;
 	}
 
 	public OrderSagaRepository sagaRepository() {
@@ -52,6 +55,10 @@ public class OrderSagaDependencies {
 
 	public ShippingService shippingService() {
 		return shippingService;
+	}
+
+	public OrderSagaMetrics metrics() {
+		return metrics;
 	}
 
 }

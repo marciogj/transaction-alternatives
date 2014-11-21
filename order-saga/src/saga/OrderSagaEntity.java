@@ -1,7 +1,9 @@
 package saga;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import order.OrderEntity;
 import order.OrderItemEntity;
@@ -10,7 +12,7 @@ public class OrderSagaEntity {
 
 	public String orderHash;
 	public String customerHash;
-	public List<OrderSagaItemEntity> items;
+	public Map<String, OrderSagaItemEntity> items;
 
 	/* Activities. */
 	public PaymentResult paymentResult;
@@ -23,10 +25,11 @@ public class OrderSagaEntity {
 	public OrderSagaEntity copy() {
 		OrderSagaEntity newOrderSagaEntity = new OrderSagaEntity();
 		newOrderSagaEntity.orderHash = orderHash;
-		newOrderSagaEntity.items = new ArrayList<>();
-		for (OrderSagaItemEntity item : items) {
-			OrderSagaItemEntity newItem = item.copy();
-			newOrderSagaEntity.items.add(newItem);
+		newOrderSagaEntity.customerHash = customerHash;
+		newOrderSagaEntity.items = new HashMap<>();
+		for (Entry<String, OrderSagaItemEntity> item : items.entrySet()) {
+			OrderSagaItemEntity newItem = item.getValue().copy();
+			newOrderSagaEntity.items.put(item.getKey(), newItem);
 		}
 		newOrderSagaEntity.paymentResult = paymentResult;
 		newOrderSagaEntity.orderResult = orderResult;
@@ -39,7 +42,7 @@ public class OrderSagaEntity {
 		OrderEntity order = new OrderEntity();
 		order.hash = orderHash;
 		order.items = new ArrayList<>();
-		for (OrderSagaItemEntity item : items) {
+		for (OrderSagaItemEntity item : items.values()) {
 			OrderItemEntity orderItem = new OrderItemEntity();
 			orderItem.hash = item.itemHash;
 			orderItem.quantity = item.quantity;

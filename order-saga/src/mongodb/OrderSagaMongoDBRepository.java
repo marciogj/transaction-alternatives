@@ -2,11 +2,11 @@ package mongodb;
 
 import org.jongo.MongoCollection;
 
+import saga.OrderResult;
 import saga.OrderSagaEntity;
 import saga.OrderSagaRepository;
-
-import com.mongodb.DuplicateKeyException;
-import com.mongodb.WriteResult;
+import saga.OrderSagaResult;
+import saga.PaymentResult;
 
 public class OrderSagaMongoDBRepository implements OrderSagaRepository {
 
@@ -19,29 +19,69 @@ public class OrderSagaMongoDBRepository implements OrderSagaRepository {
 
 	@Override
 	public void save(OrderSagaEntity orderSaga) {
-		try {
-			orderSagaCollection.save(orderSaga);
-		} catch (DuplicateKeyException e) {
-			System.out.println("> Duplicated OrderSagaEntity, won't write.");
-			// ok
-		}
+		orderSagaCollection.save(orderSaga);
 	}
 
-	@Override
-	public OrderSagaEntity loadByHash(String orderSagaHash) {
+	private OrderSagaEntity loadByHash(String orderSagaHash) {
 		return orderSagaCollection.findOne("{orderHash: #}", orderSagaHash).as(
 				OrderSagaEntity.class);
 	}
 
 	@Override
-	public void replace(OrderSagaEntity oldOrder, OrderSagaEntity newOrder) {
-		if (newOrder.version <= oldOrder.version) {
-			throw new RuntimeException();
+	public void finishSaga(String orderSagaHash) {
+		int n = orderSagaCollection
+				.update("{orderHash: #, orderResult: #}", orderSagaHash,
+						OrderResult.SCHEDULED)
+				.with("{$set: {sagaResult: #}}", OrderSagaResult.COMMIT).getN();
+		if (n < 1) {
+			orderSagaCollection.update("{orderHash: #, orderResult: #}",
+					orderSagaHash, OrderResult.CANCELLED).with(
+					"{$set: {sagaResult: #}}", OrderSagaResult.ROLLBACK);
 		}
-		WriteResult wr = orderSagaCollection.update(
-				"{orderHash: #, version: #}", oldOrder.orderHash,
-				oldOrder.version).with(newOrder);
-		System.out.println("> Replaced? " + wr.getN());
+	}
+
+	@Override
+	public void setOrderResult(String orderSagaHash, OrderResult orderResult) {
+		orderSagaCollection.update("{orderHash: #}", orderSagaHash).with(
+				"{$set: {orderResult: #}}", orderResult);
+	}
+
+	@Override
+	public OrderSagaEntity setItemStockConfirmed(String orderSagaHash,
+			String itemHash) {
+		orderSagaCollection.update("{orderHash: #}", orderSagaHash).with(
+				"{$set: {items.#.confirmed: #}}", itemHash, true);
+		return loadByHash(orderSagaHash);
+	}
+
+	@Override
+	public OrderSagaEntity setPaymentResult(String orderHash,
+			PaymentResult paymentResult) {
+		orderSagaCollection.update("{orderHash: #}", orderHash).with(
+				"{$set: {paymentResult: #}}", paymentResult);
+		return loadByHash(orderHash);
+	}
+
+	@Override
+	public OrderSagaEntity setItemStockReturned(String orderHash,
+			String itemHash) {
+		orderSagaCollection.update("{orderHash: #}", orderHash).with(
+				"{$set: {items.#.returned: #}}", itemHash, true);
+		return loadByHash(orderHash);
+	}
+
+	@Override
+	public OrderSagaEntity setItemOutOfStock(String orderHash, String itemHash) {
+		orderSagaCollection.update("{orderHash: #}", orderHash).with(
+				"{$set: {items.#.outOfStock: #}}", itemHash, true);
+		return loadByHash(orderHash);
+	}
+
+	@Override
+	public OrderSagaEntity setStockReserved(String orderHash, String itemHash) {
+		orderSagaCollection.update("{orderHash: #}", orderHash).with(
+				"{$set: {items.#.reserved: #}}", itemHash, true);
+		return loadByHash(orderHash);
 	}
 
 }

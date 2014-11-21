@@ -10,14 +10,15 @@ import org.jongo.MongoCollection;
 import saga.OrderSagaRepository;
 import shipping.ShippingRepository;
 import stock.StockRepository;
+import bda.Repository;
 
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
 
-public class MongoDBRepository {
+public class MongoDBRepository implements Repository {
 
 	private MongoClient client;
-	private Jongo jongo;
+	private Jongo db;
 
 	public MongoDBRepository() {
 		try {
@@ -26,26 +27,30 @@ public class MongoDBRepository {
 			throw new RuntimeException(e);
 		}
 		DB db = client.getDB("BDA");
-		jongo = new Jongo(db);
+		this.db = new Jongo(db);
 	}
 
+	@Override
 	public OrderSagaRepository orderSagaRepository() {
-		MongoCollection orderSagaCollection = jongo.getCollection("order-saga");
+		MongoCollection orderSagaCollection = db.getCollection("order-saga");
 		return new OrderSagaMongoDBRepository(orderSagaCollection);
 	}
 
+	@Override
 	public OrderRepository orderRepository() {
-		MongoCollection orderCollection = jongo.getCollection("order");
+		MongoCollection orderCollection = db.getCollection("order");
 		return new OrderMongoDBRepository(orderCollection);
 	}
 
+	@Override
 	public ShippingRepository shippingRepository() {
-		MongoCollection shippingCollection = jongo.getCollection("shipping");
+		MongoCollection shippingCollection = db.getCollection("shipping");
 		return new ShippingMongoDBRepository(shippingCollection);
 	}
 
+	@Override
 	public StockRepository stockRepository() {
-		MongoCollection stockCollection = jongo.getCollection("stock");
+		MongoCollection stockCollection = db.getCollection("stock");
 		return new StockMongoDBRepository(stockCollection);
 	}
 

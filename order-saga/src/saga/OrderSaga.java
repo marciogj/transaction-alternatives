@@ -27,6 +27,7 @@ public class OrderSaga implements OrderEventBus, PaymentEventBus,
 	}
 
 	public void placeOrder(OrderSagaEntity orderSaga) {
+		dependencies.metrics().beginOrder(orderSaga.orderHash);
 		dependencies.sagaRepository().save(orderSaga);
 		OrderEntity order = orderSaga.toOrder();
 		dependencies.orderService().placeOrder(order);
@@ -47,25 +48,23 @@ public class OrderSaga implements OrderEventBus, PaymentEventBus,
 	public void stockReserved(ReservationRequest reservationRequest) {
 		String reservationHash = reservationRequest.reservationHash;
 		String itemHash = reservationRequest.itemHash;
-		int quantity = reservationRequest.quantity;
 
 		OrderSagaRepository sagaRepository = dependencies.sagaRepository();
-		OrderSagaEntity oldOrder = sagaRepository.loadByHash(reservationHash);
-		OrderSagaEntity newOrder = oldOrder.copy();
+		OrderSagaEntity newOrder = sagaRepository.setStockReserved(
+				reservationHash, itemHash);
+
+		if (newOrder == null) {
+			return;
+		}
+
 		boolean readyForPayment = true;
 		boolean readyForRollback = true;
 		int priceSum = 0;
-		for (OrderSagaItemEntity newItem : newOrder.items) {
-			if (newItem.itemHash.equals(itemHash)
-					&& newItem.quantity == quantity) {
-				newItem.reserved = true;
-			}
-			System.out.println("> Item reserved? " + newItem.reserved);
+		for (OrderSagaItemEntity newItem : newOrder.items.values()) {
 			readyForPayment &= newItem.reserved;
 			readyForRollback &= newItem.reserved || newItem.outOfStock;
 			priceSum += newItem.price;
 		}
-		sagaRepository.replace(oldOrder, newOrder);
 
 		if (readyForPayment) {
 			PaymentRequest paymentRequest = new PaymentRequest();
@@ -81,20 +80,19 @@ public class OrderSaga implements OrderEventBus, PaymentEventBus,
 	public void outOfStock(ReservationRequest reservationRequest) {
 		String reservationHash = reservationRequest.reservationHash;
 		String itemHash = reservationRequest.itemHash;
-		int quantity = reservationRequest.quantity;
 
 		OrderSagaRepository sagaRepository = dependencies.sagaRepository();
-		OrderSagaEntity oldOrder = sagaRepository.loadByHash(reservationHash);
-		OrderSagaEntity newOrder = oldOrder.copy();
+		OrderSagaEntity newOrder = sagaRepository.setItemOutOfStock(
+				reservationHash, itemHash);
+
+		if (newOrder == null) {
+			return;
+		}
+
 		boolean readyForRollback = true;
-		for (OrderSagaItemEntity newItem : newOrder.items) {
-			if (newItem.itemHash.equals(itemHash)
-					&& newItem.quantity == quantity) {
-				newItem.outOfStock = true;
-			}
+		for (OrderSagaItemEntity newItem : newOrder.items.values()) {
 			readyForRollback &= newItem.reserved || newItem.outOfStock;
 		}
-		sagaRepository.replace(oldOrder, newOrder);
 
 		if (readyForRollback) {
 			rollbackStockReservation(newOrder);
@@ -103,34 +101,40 @@ public class OrderSaga implements OrderEventBus, PaymentEventBus,
 
 	private void rollbackStockReservation(OrderSagaEntity orderSaga) {
 		String orderHash = orderSaga.orderHash;
-		for (OrderSagaItemEntity item : orderSaga.items) {
+		boolean anyReturned = false;
+		for (OrderSagaItemEntity item : orderSaga.items.values()) {
 			if (item.reserved) {
 				ReservationRequest reservationRequest = new ReservationRequest();
 				reservationRequest.reservationHash = orderHash;
 				reservationRequest.itemHash = item.itemHash;
 				reservationRequest.quantity = item.quantity;
 				dependencies.stockService().returnStock(reservationRequest);
+				anyReturned = true;
 			}
+		}
+		if (!anyReturned) {
+			// No items were reserved, we can cancel the order
+			dependencies.orderService().cancelOrder(orderSaga.orderHash);
 		}
 	}
 
 	public void stockReturned(ReservationRequest reservationRequest) {
 		String reservationHash = reservationRequest.reservationHash;
 		String itemHash = reservationRequest.itemHash;
-		int quantity = reservationRequest.quantity;
 
 		OrderSagaRepository sagaRepository = dependencies.sagaRepository();
-		OrderSagaEntity oldOrder = sagaRepository.loadByHash(reservationHash);
-		OrderSagaEntity newOrder = oldOrder.copy();
+
+		OrderSagaEntity newOrder = sagaRepository.setItemStockReturned(
+				reservationHash, itemHash);
+
+		if (newOrder == null) {
+			return;
+		}
+
 		boolean readyForCancellation = true;
-		for (OrderSagaItemEntity newItem : newOrder.items) {
-			if (newItem.itemHash.equals(itemHash)
-					&& newItem.quantity == quantity) {
-				newItem.returned = true;
-			}
+		for (OrderSagaItemEntity newItem : newOrder.items.values()) {
 			readyForCancellation &= newItem.returned || newItem.outOfStock;
 		}
-		sagaRepository.replace(oldOrder, newOrder);
 
 		if (readyForCancellation) {
 			dependencies.orderService().cancelOrder(reservationHash);
@@ -140,11 +144,9 @@ public class OrderSaga implements OrderEventBus, PaymentEventBus,
 	public void paymentRejected(PaymentRequest paymentRequest) {
 		String orderHash = paymentRequest.paymentCorrelationHash;
 		OrderSagaRepository sagaRepository = dependencies.sagaRepository();
-		OrderSagaEntity oldOrder = sagaRepository.loadByHash(orderHash);
-		OrderSagaEntity newOrder = oldOrder.copy();
 
-		newOrder.paymentResult = PaymentResult.REJECTED;
-		sagaRepository.save(newOrder);
+		OrderSagaEntity newOrder = sagaRepository.setPaymentResult(orderHash,
+				PaymentResult.REJECTED);
 
 		rollbackStockReservation(newOrder);
 	}
@@ -152,13 +154,11 @@ public class OrderSaga implements OrderEventBus, PaymentEventBus,
 	public void paymentAccepted(PaymentRequest paymentRequest) {
 		String orderHash = paymentRequest.paymentCorrelationHash;
 		OrderSagaRepository sagaRepository = dependencies.sagaRepository();
-		OrderSagaEntity oldOrder = sagaRepository.loadByHash(orderHash);
-		OrderSagaEntity newOrder = oldOrder.copy();
 
-		newOrder.paymentResult = PaymentResult.ACCEPTED;
-		sagaRepository.save(newOrder);
+		OrderSagaEntity newOrder = sagaRepository.setPaymentResult(orderHash,
+				PaymentResult.ACCEPTED);
 
-		for (OrderSagaItemEntity newItem : newOrder.items) {
+		for (OrderSagaItemEntity newItem : newOrder.items.values()) {
 			ReservationRequest reservationRequest = new ReservationRequest();
 			reservationRequest.reservationHash = newOrder.orderHash;
 			reservationRequest.itemHash = newItem.itemHash;
@@ -169,41 +169,37 @@ public class OrderSaga implements OrderEventBus, PaymentEventBus,
 
 	public void orderCancelled(String orderHash) {
 		OrderSagaRepository sagaRepository = dependencies.sagaRepository();
-		OrderSagaEntity oldOrder = sagaRepository.loadByHash(orderHash);
-		OrderSagaEntity newOrder = oldOrder.copy();
-		newOrder.orderResult = OrderResult.CANCELLED;
-		sagaRepository.replace(oldOrder, newOrder);
+		sagaRepository.setOrderResult(orderHash, OrderResult.CANCELLED);
 		RelationshipEntity message = new RelationshipEntity();
-		message.relationshipCorrelationHash = newOrder.orderHash;
+		message.relationshipCorrelationHash = orderHash;
 		message.message = "Order cancelled";
-		dependencies.relationshipService().notifyCustomer(message);
+		notifyCustomer(message);
 	}
 
 	public void stockConfirmed(ReservationRequest reservationRequest) {
 		String reservationHash = reservationRequest.reservationHash;
 		String itemHash = reservationRequest.itemHash;
-		int quantity = reservationRequest.quantity;
 
 		OrderSagaRepository sagaRepository = dependencies.sagaRepository();
-		OrderSagaEntity oldOrder = sagaRepository.loadByHash(reservationHash);
-		OrderSagaEntity newOrder = oldOrder.copy();
+
+		OrderSagaEntity newOrder = sagaRepository.setItemStockConfirmed(
+				reservationHash, itemHash);
+
+		if (newOrder == null) {
+			return;
+		}
+
 		boolean readyForShipping = true;
-		for (OrderSagaItemEntity newItem : newOrder.items) {
-			if (newItem.itemHash.equals(itemHash)
-					&& newItem.quantity == quantity) {
-				newItem.confirmed = true;
-			}
-			System.out.println("> Item confirmed? " + newItem.confirmed);
+		for (OrderSagaItemEntity newItem : newOrder.items.values()) {
 			readyForShipping &= newItem.confirmed;
 		}
-		sagaRepository.replace(oldOrder, newOrder);
 
 		if (readyForShipping) {
 			DeliveryRequest deliveryRequest = new DeliveryRequest();
 			deliveryRequest.deliveryCorrelationHash = newOrder.orderHash;
 			deliveryRequest.customerHash = newOrder.customerHash;
 			deliveryRequest.items = new ArrayList<>();
-			for (OrderSagaItemEntity newItem : newOrder.items) {
+			for (OrderSagaItemEntity newItem : newOrder.items.values()) {
 				DeliveryItemRequest deliveryItem = new DeliveryItemRequest();
 				deliveryItem.itemHash = newItem.itemHash;
 				deliveryItem.quantity = newItem.quantity;
@@ -216,31 +212,25 @@ public class OrderSaga implements OrderEventBus, PaymentEventBus,
 	public void deliveryScheduled(DeliveryRequest deliveryRequest) {
 		String deliveryCorrelationHash = deliveryRequest.deliveryCorrelationHash;
 		OrderSagaRepository sagaRepository = dependencies.sagaRepository();
-		OrderSagaEntity oldOrder = sagaRepository
-				.loadByHash(deliveryCorrelationHash);
-		OrderSagaEntity newOrder = oldOrder.copy();
-		newOrder.orderResult = OrderResult.SCHEDULED;
-		sagaRepository.replace(oldOrder, newOrder);
-		RelationshipService relationshipService = dependencies
-				.relationshipService();
+		sagaRepository.setOrderResult(deliveryCorrelationHash,
+				OrderResult.SCHEDULED);
 		RelationshipEntity message = new RelationshipEntity();
 		message.relationshipCorrelationHash = deliveryCorrelationHash;
 		message.message = "Shipping scheduled";
+		notifyCustomer(message);
+	}
+
+	private void notifyCustomer(RelationshipEntity message) {
+		dependencies.metrics().endOrder(message.relationshipCorrelationHash);
+		RelationshipService relationshipService = dependencies
+				.relationshipService();
 		relationshipService.notifyCustomer(message);
 	}
 
 	public void customerNotified(RelationshipEntity relationshipMessage) {
 		String relationshipCorrelationHash = relationshipMessage.relationshipCorrelationHash;
 		OrderSagaRepository sagaRepository = dependencies.sagaRepository();
-		OrderSagaEntity oldOrder = sagaRepository
-				.loadByHash(relationshipCorrelationHash);
-		OrderSagaEntity newOrder = oldOrder.copy();
-		if (OrderResult.CANCELLED.equals(newOrder.orderResult)) {
-			newOrder.sagaResult = OrderSagaResult.ROLLBACK;
-		} else {
-			newOrder.sagaResult = OrderSagaResult.COMMIT;
-		}
-		sagaRepository.replace(oldOrder, newOrder);
+		sagaRepository.finishSaga(relationshipCorrelationHash);
 
 		// done
 	}

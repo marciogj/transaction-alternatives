@@ -1,6 +1,7 @@
 package bda;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import mongodb.MongoDBRepository;
 import order.OrderCommandHandler;
@@ -21,6 +22,7 @@ import saga.OrderSaga;
 import saga.OrderSagaDependencies;
 import saga.OrderSagaEntity;
 import saga.OrderSagaItemEntity;
+import saga.OrderSagaMetrics;
 import saga.OrderSagaRepository;
 import shipping.ShippingCommandHandler;
 import shipping.ShippingEventBus;
@@ -34,8 +36,13 @@ import stock.StockService;
 
 public class Main {
 
+	private static OrderSagaMetrics metrics = new OrderSagaMetrics();
+
 	public static void main(String[] args) {
-		MongoDBRepository mongoDBRepository = new MongoDBRepository();
+		// Switch implementation:
+		Repository repository = new MongoDBRepository();
+		// Repository repository = new MySQLRepository();
+
 		RabbitMQCommandSender rabbitMQCommandSender = new RabbitMQCommandSender();
 		RabbitMQCommandReceiver rabbitMQCommandReceiver = new RabbitMQCommandReceiver();
 		RabbitMQEventBus rabbitMQEventBus = new RabbitMQEventBus();
@@ -43,7 +50,7 @@ public class Main {
 
 		/* Set up order service command handler. */
 		OrderEventBus orderEventBus = rabbitMQEventBus.orderEventBus();
-		OrderRepository orderRepository = mongoDBRepository.orderRepository();
+		OrderRepository orderRepository = repository.orderRepository();
 		OrderCommandHandler orderCommandHandler = new OrderCommandHandler(
 				orderEventBus, orderRepository);
 		rabbitMQCommandReceiver.addOrderServiceHandler("main",
@@ -65,8 +72,7 @@ public class Main {
 				relationshipCommandHandler);
 
 		/* Set up shipping service command handler. */
-		ShippingRepository shippingRepository = mongoDBRepository
-				.shippingRepository();
+		ShippingRepository shippingRepository = repository.shippingRepository();
 		ShippingEventBus shippingEventBus = rabbitMQEventBus.shippingEventBus();
 		ShippingService shippingCommandHandler = new ShippingCommandHandler(
 				shippingRepository, shippingEventBus);
@@ -74,7 +80,7 @@ public class Main {
 				shippingCommandHandler);
 
 		/* Set up stock service command handler. */
-		StockRepository stockRepository = mongoDBRepository.stockRepository();
+		StockRepository stockRepository = repository.stockRepository();
 		StockEventBus stockEventBus = rabbitMQEventBus.stockEventBus();
 		StockService stockCommandHandler = new StockCommandHandler(
 				stockRepository, stockEventBus);
@@ -83,7 +89,7 @@ public class Main {
 
 		/* Set up saga event listener. */
 		OrderSagaDependencies orderSagaDependencies = orderSagaDependencies(
-				mongoDBRepository, rabbitMQCommandSender);
+				repository, rabbitMQCommandSender);
 		OrderSaga orderSaga = new OrderSaga(orderSagaDependencies);
 		rabbitMQEventListener.addOrderEventBusHandler("orderSaga", orderSaga);
 		rabbitMQEventListener.addPaymentEventBusHandler("orderSaga", orderSaga);
@@ -93,48 +99,35 @@ public class Main {
 				.addShippingEventBusHandler("orderSaga", orderSaga);
 		rabbitMQEventListener.addStockEventBusHandler("orderSaga", orderSaga);
 
-		StockItemEntity stockItem0 = new StockItemEntity();
-		stockItem0.hash = "Item0";
-		stockItem0.inStockQuantity = 10;
-		stockItem0.reservations = new ArrayList<>();
-		stockRepository.save(stockItem0);
-		StockItemEntity stockItem1 = new StockItemEntity();
-		stockItem1.hash = "Item1";
-		stockItem1.inStockQuantity = 10;
-		stockItem1.reservations = new ArrayList<>();
-		stockRepository.save(stockItem1);
-		StockItemEntity stockItem2 = new StockItemEntity();
-		stockItem2.hash = "Item2";
-		stockItem2.inStockQuantity = 10;
-		stockItem2.reservations = new ArrayList<>();
-		stockRepository.save(stockItem2);
+		/* Create 10 items with 100 units. */
+		for (int itemId = 0; itemId < 10; itemId++) {
+			StockItemEntity stockItem = new StockItemEntity();
+			stockItem.hash = "Item" + itemId;
+			stockItem.inStockQuantity = 100;
+			stockItem.reservations = new ArrayList<>();
+			stockRepository.save(stockItem);
+		}
 
-		/* Place order. */
-		OrderSagaEntity orderSagaEntity = new OrderSagaEntity();
-		orderSagaEntity.version = 0;
-		orderSagaEntity.customerHash = "Customer1";
-		orderSagaEntity.orderHash = "Order1";
-		orderSagaEntity.items = new ArrayList<>();
-		OrderSagaItemEntity item0 = new OrderSagaItemEntity();
-		item0.itemHash = "Item0";
-		item0.price = 150;
-		item0.quantity = 2;
-		orderSagaEntity.items.add(item0);
-		OrderSagaItemEntity item1 = new OrderSagaItemEntity();
-		item1.itemHash = "Item1";
-		item1.price = 100;
-		item1.quantity = 3;
-		orderSagaEntity.items.add(item1);
-		OrderSagaItemEntity item2 = new OrderSagaItemEntity();
-		item2.itemHash = "Item2";
-		item2.price = 50;
-		item2.quantity = 7;
-		orderSagaEntity.items.add(item2);
-		orderSaga.placeOrder(orderSagaEntity);
+		/* Place 1 orders of the items. */
+		for (int orderId = 0; orderId < 300; orderId++) {
+			OrderSagaEntity orderSagaEntity = new OrderSagaEntity();
+			orderSagaEntity.version = 0;
+			orderSagaEntity.customerHash = "Customer1";
+			orderSagaEntity.orderHash = "Order" + orderId;
+			orderSagaEntity.items = new HashMap<>();
+			for (int itemId = 0; itemId < 10; itemId++) {
+				OrderSagaItemEntity item = new OrderSagaItemEntity();
+				item.itemHash = "Item" + itemId;
+				item.price = 1;
+				item.quantity = 1;
+				orderSagaEntity.items.put(item.itemHash, item);
+			}
+			orderSaga.placeOrder(orderSagaEntity);
+		}
 	}
 
 	private static OrderSagaDependencies orderSagaDependencies(
-			MongoDBRepository mongoDBRepository,
+			Repository mongoDBRepository,
 			RabbitMQCommandSender rabbitMQCommandSender) {
 		OrderSagaRepository orderSagaRepository = mongoDBRepository
 				.orderSagaRepository();
@@ -147,7 +140,7 @@ public class Main {
 				.shippingService();
 		OrderSagaDependencies orderSagaDependencies = new OrderSagaDependencies(
 				orderSagaRepository, orderService, stockService,
-				paymentService, relationshipService, shippingService);
+				paymentService, relationshipService, shippingService, metrics);
 		return orderSagaDependencies;
 	}
 

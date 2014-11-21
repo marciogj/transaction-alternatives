@@ -2,26 +2,21 @@ package rabbitmq.event;
 
 import order.OrderEventBus;
 import payment.PaymentEventBus;
+import rabbitmq.ConnectionFactories;
 import rabbitmq.DefaultRabbitMQMessageConsumer;
 import relationship.RelationshipEventBus;
 import shipping.ShippingEventBus;
 import stock.StockEventBus;
 
-import com.rabbitmq.client.ConnectionFactory;
-
 public class RabbitMQEventListener {
 
-	private ConnectionFactory factory;
-
 	public RabbitMQEventListener() {
-		factory = new ConnectionFactory();
-		factory.setHost("localhost");
 	}
 
 	public DefaultRabbitMQMessageConsumer addOrderEventBusHandler(String name,
 			OrderEventBus orderEventBus) {
 		DefaultRabbitMQMessageConsumer consumer = new DefaultRabbitMQMessageConsumer(
-				factory, "order-event", name);
+				ConnectionFactories.order(), "order-event", name);
 		consumer.init(new OrderEventBusRabbitMQHandler(orderEventBus));
 		return consumer;
 	}
@@ -29,7 +24,7 @@ public class RabbitMQEventListener {
 	public DefaultRabbitMQMessageConsumer addPaymentEventBusHandler(
 			String name, PaymentEventBus paymentEventBus) {
 		DefaultRabbitMQMessageConsumer consumer = new DefaultRabbitMQMessageConsumer(
-				factory, "payment-event", name);
+				ConnectionFactories.order(), "payment-event", name);
 		consumer.init(new PaymentEventBusRabbitMQHandler(paymentEventBus));
 		return consumer;
 	}
@@ -37,7 +32,7 @@ public class RabbitMQEventListener {
 	public DefaultRabbitMQMessageConsumer addRelationshipEventBusHandler(
 			String name, RelationshipEventBus relationshipEventBus) {
 		DefaultRabbitMQMessageConsumer consumer = new DefaultRabbitMQMessageConsumer(
-				factory, "relationship-event", name);
+				ConnectionFactories.order(), "relationship-event", name);
 		consumer.init(new RelationshipEventBusRabbitMQHandler(
 				relationshipEventBus));
 		return consumer;
@@ -46,7 +41,7 @@ public class RabbitMQEventListener {
 	public DefaultRabbitMQMessageConsumer addShippingEventBusHandler(
 			String name, ShippingEventBus shippingEventBus) {
 		DefaultRabbitMQMessageConsumer consumer = new DefaultRabbitMQMessageConsumer(
-				factory, "shipping-event", name);
+				ConnectionFactories.order(), "shipping-event", name);
 		consumer.init(new ShippingEventBusRabbitMQHandler(shippingEventBus));
 		return consumer;
 	}
@@ -54,7 +49,7 @@ public class RabbitMQEventListener {
 	public DefaultRabbitMQMessageConsumer addStockEventBusHandler(String name,
 			StockEventBus stockEventBus) {
 		DefaultRabbitMQMessageConsumer consumer = new DefaultRabbitMQMessageConsumer(
-				factory, "stock-event", name);
+				ConnectionFactories.order(), "stock-event", name);
 		consumer.init(new StockEventBusRabbitMQHandler(stockEventBus));
 		return consumer;
 	}
